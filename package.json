@@ -1,0 +1,17 @@
+{
+  "name": "mern-stack-assessment",
+  "version": "1.0.0",
+  "description": "this project is an assessment of mern stack by ideamagix",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mern-stack",
+    "ideamagix",
+    "full-stack-development",
+    "mern-stack-development"
+  ],
+  "author": "sangeeta peragani",
+  "license": "ISC"
+}
