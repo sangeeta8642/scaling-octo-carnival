@@ -1,6 +1,8 @@
 import { Patient } from "../models/patient.model.js";
 import cloudinary from "../utils/cloudinary.js";
 import getDataUri from "../utils/datauri.js";
+import jwt from "jsonwebtoken";
+import { sendResponse } from "../utils/apiResponse.js";
 
 export const registerPatient = async (req, res) => {
   try {
@@ -16,50 +18,40 @@ export const registerPatient = async (req, res) => {
       illnessHistory,
     } = req.body;
 
-    if (
-      !name ||
-      !age ||
-      !email ||
-      !password ||
-      !phone
-    ) {
-      return res
-        .status(400)
-        .json({ message: "please provide the complete data22", success: false });
+    if (!name || !age || !email || !password || !phone) {
+      return sendResponse(res, 400, "please provide the complete data");
     }
 
     const isEmailExists = await Patient.findOne({ email });
     const isMobNOExists = await Patient.findOne({ phone });
 
     if (isEmailExists) {
-      return res.status(400).json({
-        message: "this email already exists,please provide the new one",
-        success: false,
-      });
+      return sendResponse(
+        res,
+        400,
+        "this email already exists,please provide the new one"
+      );
     }
 
     if (isMobNOExists) {
-      return res.status(400).json({
-        message: "this mobile number already exists,please provide the new one",
-        success: false,
-      });
+      return sendResponse(
+        res,
+        400,
+        "this mobile number already exists,please provide the new one"
+      );
     }
 
     const image = req.file;
 
     if (!image) {
-      return res.status(400).json({
-        message: "please provide the profile image",
-        success: false,
-      });
+      return sendResponse(res, 400, "please provide the profile image");
     }
 
-    
     const imageUri = getDataUri(image);
-    console.log(imageUri);
-    const cloudRes = cloudinary.uploader.upload(imageUri);
+    // console.log(imageUri);
+    const cloudRes = await cloudinary.uploader.upload(imageUri.content);
 
-    console.log("Could --- ", cloudRes);
+    // console.log("Could --- ", cloudRes);
 
     await Patient.create({
       name,
@@ -69,82 +61,49 @@ export const registerPatient = async (req, res) => {
       phone,
       surgeryHistory,
       illnessHistory,
-      profilePic: cloudRes || "",
+      profilePic: cloudRes.secure_url || "",
     });
 
-    return res
-      .status(200)
-      .json({ message: "patient created successfully", status: true });
+    return sendResponse(res, 201, "patient created successfully", true);
   } catch (error) {
-    res.status(500).json({
-      message: "failed to create patient",
-      error: error.message,
-      success: false,
-    });
+    return sendResponse(res, 500, error.message);
   }
 };
 
-// const multer = require('multer');
-// const storage = multer.memoryStorage();
-// const upload = multer({ storage: storage });
+export const loginPatient = async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-// export const registerPatient = async (req, res) => {
-//   try {
-//     const {
-//       name,
-//       age,
-//       email,
-//       password,
-//       phone,
-//       surgeryHistory,
-//       illnessHistory,
-//     } = req.body;
+    if (!email || !password) {
+      return sendResponse(res, 400, "please provide the complete data");
+    }
 
-//     // Check for existing email or phone
-//     const isEmailExists = await Patient.findOne({ email });
-//     const isMobNOExists = await Patient.findOne({ phone });
+    const patient = await Patient.findOne({ email });
 
-//     if (isEmailExists) {
-//       return res.status(400).json({
-//         message: "This email already exists. Please provide a new one.",
-//         success: false,
-//       });
-//     }
+    if (!patient) {
+      return sendResponse(res, 404, "No patient found");
+    }
 
-//     if (isMobNOExists) {
-//       return res.status(400).json({
-//         message: "This mobile number already exists. Please provide a new one.",
-//         success: false,
-//       });
-//     }
+    const isPasswordMatched = await patient.matchPassword(password);
 
-//     if (!req.file) {
-//       return res.status(400).json({
-//         message: "Please provide a profile image.",
-//         success: false,
-//       });
-//     }
+    if (!isPasswordMatched) {
+      return sendResponse(res, 400, "Invalid Password");
+    }
 
-//     const imageUri = getDataUri(req.file.buffer);
-//     const cloudRes = await cloudinary.uploader.upload(imageUri.content);
+    const token = await jwt.sign(
+      { patientId: patient._id },
+      process.env.SECRET_KEY,
+      { expiresIn: "1h" }
+    );
 
-//     await Patient.create({
-//       name,
-//       age,
-//       email,
-//       password,
-//       phone,
-//       surgeryHistory,
-//       illnessHistory,
-//       profilePic: cloudRes.url, // store the image URL from Cloudinary
-//     });
+    res.cookie("token", token, {
+      maxAge: 1 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      sameSite: "strict",
+    });
 
-//     return res.status(200).json({ message: "Patient created successfully", success: true });
-//   } catch (error) {
-//     res.status(500).json({
-//       message: "Failed to create patient.",
-//       error: error.message,
-//       success: false,
-//     });
-//   }
-// };
+    return sendResponse(res, 200, "login successfull", true);
+  } catch (error) {
+    return sendResponse(res, 500, error.message);
+  }
+};
