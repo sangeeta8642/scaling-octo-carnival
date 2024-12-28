@@ -17,17 +17,8 @@ const consultationSchema = new mongoose.Schema(
       required: true,
     },
     recentSurgery: {
-      type: String,
-      timespan: String,
-    },
-    phone: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    specialty: {
-      type: String,
-      required: true,
+      name: { type: String, require: true },
+      timespan: { type: String, require: true },
     },
     familyHistory: {
       isDiabetic: { type: Boolean, required: true },
@@ -38,14 +29,10 @@ const consultationSchema = new mongoose.Schema(
       qrCode: { type: String, required: true }, //URL of qrcode
       transitionId: { type: String, required: true },
     },
-    profilePic: {
-      type: String, //cloudinary url
-      required: true,
-    },
   },
   {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.model("Consultation", consultationSchema);
+export const Consultation = mongoose.model("Consultation", consultationSchema);

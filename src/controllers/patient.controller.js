@@ -107,3 +107,22 @@ export const loginPatient = async (req, res) => {
     return sendResponse(res, 500, error.message);
   }
 };
+
+export const getPatientById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return sendResponse(res, 400, "please provide the patientId");
+    }
+
+    const patient = await Patient.findById(id);
+    if (!patient) {
+      return sendResponse(res, 404, "No patient found");
+    }
+
+    return sendResponse(res, 201, "", patient);
+  } catch (error) {
+    return sendResponse(res, 500, error.message);
+  }
+};

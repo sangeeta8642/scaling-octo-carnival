@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import PatientRoute from "./routes/patient.route.js";
 import DoctorRoute from "./routes/doctor.route.js";
+import ConsultationRoute from "./routes/consultation.route.js";
 import { sendResponse } from "./utils/apiResponse.js";
 
 const app = e();
@@ -23,7 +24,11 @@ app.get("/", (_, res) => {
   return res.json("Im running");
 });
 
-app.post("/api/v1/logout", async (req, res) => {
+app.use("/api/v1/patient", PatientRoute);
+app.use("/api/v1/doctor", DoctorRoute);
+app.use("/api/v1/consultation", ConsultationRoute);
+
+app.post("/api/v1/logout", async (_, res) => {
   try {
     res.cookie("token", "", { maxAge: 0 });
     return sendResponse(res, 200, "logout successfull", true);
@@ -31,8 +36,5 @@ app.post("/api/v1/logout", async (req, res) => {
     return sendResponse(res, 500, error.message);
   }
 });
-
-app.use("/api/v1/patient", PatientRoute);
-app.use("/api/v1/doctor", DoctorRoute);
 
 export { app };
